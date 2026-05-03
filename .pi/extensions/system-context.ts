@@ -7,6 +7,8 @@ import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-age
 interface SnippetData {
 	model: { provider: string; id: string } | null;
 	cwd: string;
+	thinkingLevel: string | null;
+	tokenSpend: { input: number; output: number; totalTokens: number; cost: number } | null;
 }
 
 interface BuiltinSnippet {
@@ -90,6 +92,37 @@ const BUILTINS: BuiltinSnippet[] = [
 			return `Current date and time: ${now.toISOString()}`;
 		},
 	},
+	{
+		id: "cwd",
+		label: "Working Directory",
+		description: "Shows the current working directory",
+		defaultEnabled: false,
+		generate: (data) => {
+			if (!data.cwd) return null;
+			return `Current working directory: ${data.cwd}`;
+		},
+	},
+	{
+		id: "thinking-level",
+		label: "Thinking Level",
+		description: "Shows the active thinking/reasoning level",
+		defaultEnabled: false,
+		generate: (data) => {
+			if (!data.thinkingLevel) return null;
+			return `Current thinking level: ${data.thinkingLevel}`;
+		},
+	},
+	{
+		id: "token-spend",
+		label: "Token Spend",
+		description: "Shows cumulative token usage and cost for this session",
+		defaultEnabled: false,
+		generate: (data) => {
+			if (!data.tokenSpend || data.tokenSpend.totalTokens === 0) return null;
+			const { input, output, totalTokens, cost } = data.tokenSpend;
+			return `Session tokens: ${totalTokens.toLocaleString()} total (${input.toLocaleString()} input, ${output.toLocaleString()} output) · $${cost.toFixed(4)}`;
+		},
+	},
 ];
 
 // ---------------------------------------------------------------------------
@@ -105,6 +138,8 @@ const STATE_TYPE = "system-context-config";
 export default function (pi: ExtensionAPI) {
 	// --- In-memory state -----------------------------------------------------
 	let currentModel: { provider: string; id: string } | null = null;
+	let currentThinkingLevel: string | null = null;
+	const sessionTokenUsage = { input: 0, output: 0, totalTokens: 0, cost: 0 };
 	const builtinConfig: Record<string, boolean> = {};
 	const externalSnippets = new Map<string, ExternalSnippet>();
 	const externalConfig: Record<string, boolean> = {};
@@ -158,10 +193,30 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("session_start", async (_event, ctx) => {
 		restoreState(ctx);
+		try {
+			const level = pi.getThinkingLevel();
+			if (level) currentThinkingLevel = level;
+		} catch {
+			// getThinkingLevel may not be available during very early startup
+		}
 	});
 
 	pi.on("model_select", async (event) => {
 		currentModel = { provider: event.model.provider, id: event.model.id };
+	});
+
+	pi.on("thinking_level_select", async (event) => {
+		currentThinkingLevel = event.level;
+	});
+
+	pi.on("message_end", async (event) => {
+		if (event.message.role !== "assistant") return;
+		const usage = (event.message as any).usage;
+		if (!usage) return;
+		sessionTokenUsage.input += usage.input ?? 0;
+		sessionTokenUsage.output += usage.output ?? 0;
+		sessionTokenUsage.totalTokens += usage.totalTokens ?? 0;
+		sessionTokenUsage.cost += usage.cost?.total ?? 0;
 	});
 
 	// --- Inter-extension event bus ------------------------------------------
@@ -216,6 +271,8 @@ export default function (pi: ExtensionAPI) {
 		const data: SnippetData = {
 			model,
 			cwd: event.systemPromptOptions.cwd || "",
+			thinkingLevel: currentThinkingLevel,
+			tokenSpend: sessionTokenUsage.totalTokens > 0 ? { ...sessionTokenUsage } : null,
 		};
 
 		const parts: string[] = [];

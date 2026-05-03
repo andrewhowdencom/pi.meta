@@ -8,6 +8,8 @@ Pi agents operate without inherent knowledge of their own runtime context. This 
 
 - That it is running inside the Pi Harness
 - Which model and provider are serving requests
+- What the current thinking level is (if supported by the model)
+- How many tokens have been spent in this session
 - What the current working directory is
 - What workflow or subagent state other extensions have published
 
@@ -34,6 +36,8 @@ Then reload Pi with `/reload` or restart the session.
 | `harness` | Pi Harness | Indicates the agent is running within the Pi Harness | **enabled** |
 | `model` | Current Model | Shows the active LLM model (`provider/id`) | **enabled** |
 | `provider` | Current Provider | Shows the active LLM provider | **enabled** |
+| `thinking-level` | Thinking Level | Shows the active thinking/reasoning level | disabled |
+| `token-spend` | Token Spend | Shows cumulative token usage and cost for this session | disabled |
 | `cwd` | Working Directory | Shows the current working directory | disabled |
 | `datetime` | Date and Time | Shows the current date and time in ISO 8601 format | disabled |
 
@@ -66,6 +70,8 @@ When at least one snippet is enabled and has content available, the extension ap
 - You are running the Pi Harness
 - Current model: openai/gpt-4o
 - Current provider: openai
+- Current thinking level: medium
+- Session tokens: 12,345 total (8,432 input, 3,913 output) · $0.0421
 - Current working directory: /home/user/projects/my-app
 - Active workflow: review-plan  (published by another extension)
 ```
