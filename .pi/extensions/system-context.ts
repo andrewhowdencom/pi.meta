@@ -61,7 +61,13 @@ const BUILTINS: BuiltinSnippet[] = [
 		defaultEnabled: true,
 		generate: (data) => {
 			if (!data.model) return null;
-			return `Current model: ${data.model.provider}/${data.model.id}`;
+			let id = data.model.id;
+			// Strip account-based model hosting paths: accounts/{account}/models/{model}
+			const modelsIndex = id.indexOf('/models/');
+			if (id.startsWith('accounts/') && modelsIndex !== -1) {
+				id = id.slice(modelsIndex + '/models/'.length);
+			}
+			return `Current model: ${data.model.provider}/${id}`;
 		},
 	},
 	{
