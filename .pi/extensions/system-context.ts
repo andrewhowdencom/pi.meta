@@ -75,13 +75,6 @@ const BUILTINS: BuiltinSnippet[] = [
 		},
 	},
 	{
-		id: "cwd",
-		label: "Working Directory",
-		description: "Shows the current working directory",
-		defaultEnabled: false,
-		generate: (data) => `Current working directory: ${data.cwd}`,
-	},
-	{
 		id: "datetime",
 		label: "Date and Time",
 		description: "Shows the current date and time in ISO 8601 format",
@@ -211,9 +204,11 @@ export default function (pi: ExtensionAPI) {
 
 	// --- System prompt injection --------------------------------------------
 
-	pi.on("before_agent_start", async (event) => {
+	pi.on("before_agent_start", async (event, ctx) => {
+		// model_select only fires on explicit changes; fallback to ctx.model for startup
+		const model = currentModel ?? (ctx.model ? { provider: ctx.model.provider, id: ctx.model.id } : null);
 		const data: SnippetData = {
-			model: currentModel,
+			model,
 			cwd: event.systemPromptOptions.cwd || "",
 		};
 
