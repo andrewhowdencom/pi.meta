@@ -1,0 +1,19 @@
+{
+  "name": "pi-system-context",
+  "version": "1.0.0",
+  "description": "A Pi extension that injects configurable context snippets into the agent's system prompt",
+  "keywords": ["pi-package"],
+  "license": "MIT",
+  "pi": {
+    "extensions": ["./src/index.ts"]
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE"
+  ]
+}
