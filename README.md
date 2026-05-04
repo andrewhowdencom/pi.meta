@@ -1,4 +1,4 @@
-# pi.meta
+# pi-system-context
 
 A Pi extension that injects configurable context snippets into the agent's system prompt, providing the LLM with metadata about its execution environment — the harness, the active model, the provider, the working directory, and any additional context published by other extensions.
 
@@ -17,17 +17,30 @@ All snippets are individually enable/disable-able, and third-party extensions ca
 
 ## Installation
 
-Copy `system-context.ts` into your Pi extensions directory:
+### Via `pi install` (recommended)
 
+From npm (when published):
 ```bash
-# Project-local (recommended for per-project context)
-cp system-context.ts /path/to/your/project/.pi/extensions/
+pi install npm:pi-system-context
+```
 
-# Global (applies to all projects)
-cp system-context.ts ~/.pi/agent/extensions/
+From this repository directly:
+```bash
+pi install github:andrewhowdencom/pi.meta
 ```
 
 Then reload Pi with `/reload` or restart the session.
+
+### Manual (local project)
+
+For local development or per-project use, copy or symlink `src/index.ts` into your project's Pi extensions directory:
+
+```bash
+# From the repo root
+cp src/index.ts /path/to/your/project/.pi/extensions/system-context.ts
+```
+
+Then reload Pi with `/reload`.
 
 ## Built-in Snippets
 
@@ -73,6 +86,7 @@ When at least one snippet is enabled and has content available, the extension ap
 - Current thinking level: medium
 - Session tokens: 12,345 total (8,432 input, 3,913 output) · $0.0421
 - Current working directory: /home/user/projects/my-app
+- Current date and time: 2026-05-03T12:34:56.789Z
 - Active workflow: review-plan  (published by another extension)
 ```
 
@@ -137,7 +151,7 @@ Examples:
 - `subagent-manager:current-role`
 - `git-status:branch`
 
-Built-in IDs (`harness`, `model`, `provider`, `cwd`) are reserved and cannot be overridden by external extensions.
+Built-in IDs (`harness`, `model`, `provider`, `cwd`, `datetime`, `thinking-level`, `token-spend`) are reserved and cannot be overridden by external extensions.
 
 ### Full Example
 
@@ -178,6 +192,33 @@ export default function myExtension(pi: ExtensionAPI) {
 ## State Persistence
 
 Enable/disable toggles for both built-in and external snippets are persisted in the Pi session file via `appendEntry`. They survive session restarts and `/reload`.
+
+## Development
+
+This repository uses the following layout:
+
+```
+src/
+  index.ts          # Canonical extension source
+.pi/
+  extensions/
+    system-context.ts  # Re-export — enables auto-discovery for local dev
+package.json        # Package metadata for pi install
+README.md
+LICENSE
+```
+
+### Quick iteration
+
+Test changes without installing:
+
+```bash
+pi -e ./src/index.ts
+```
+
+### Auto-discovery (local project)
+
+The file `.pi/extensions/system-context.ts` re-exports `src/index.ts` so Pi auto-discovers the extension when you open this project. If you modify `src/index.ts`, reload Pi with `/reload` to pick up changes.
 
 ## Licence
 
